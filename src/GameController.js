@@ -14,10 +14,10 @@ class GameController {
     this.context = context;
     this.canvas = canvas;
     this.heroes = [
-      { x: 50, y: 100, radius: 30, color: 'red', dy: 2, bulletColor: 'red', fireRate: 500, speed: 2, hits: 0 },
-      { x: canvas.width - 50, y: 100, radius: 30, color: 'blue', dy: 2, bulletColor: 'blue', fireRate: 500, speed: 2, hits: 0 }
+      { x: 50, y: 100, radius: 30, color: 'red', dy: 2, bulletColor: '#ff0000', fireRate: 500, speed: 1, hits: 0 },
+      { x: canvas.width - 50, y: 100, radius: 30, color: 'blue', dy: 2, bulletColor: '#0000ff', fireRate: 500, speed: 1, hits: 0 }
     ];
-
+  
     this.gameLoop();
   }
 
@@ -29,13 +29,15 @@ class GameController {
 
   update() {
     const currentTime = Date.now();
+  
+    // Обновление состояния героев
     this.heroes.forEach(hero => {
       // Движение героев
       hero.y += hero.dy * hero.speed;
       if (hero.y - hero.radius < 0 || hero.y + hero.radius > this.canvas.height) {
         hero.dy = -hero.dy;
       }
-
+  
       // Отталкивание от курсора
       if (this.mouseX !== null && this.mouseY !== null) {
         const distance = Math.sqrt((hero.x - this.mouseX) ** 2 + (hero.y - this.mouseY) ** 2);
@@ -43,7 +45,7 @@ class GameController {
           hero.dy = -hero.dy;
         }
       }
-
+  
       // Стрельба снарядами
       if (currentTime - this.lastFireTime[hero.color] > hero.fireRate) {
         this.bullets.push({
@@ -52,29 +54,38 @@ class GameController {
           dx: hero.x < this.canvas.width / 2 ? 5 : -5,
           dy: 0,
           radius: 5,
-          color: hero.bulletColor
+          color: hero.bulletColor,
+          hit: false,
+          shooter: hero.color
         });
         this.lastFireTime[hero.color] = currentTime;
       }
     });
-
-    this.bullets.forEach((bullet, bulletIndex) => {
+  
+    // Обновление снарядов
+    this.bullets = this.bullets.filter(bullet => {
       bullet.x += bullet.dx;
       bullet.y += bullet.dy;
-
+  
       // Удаление снаряда, если он вышел за границы поля
       if (bullet.x < 0 || bullet.x > this.canvas.width) {
-        this.bullets.splice(bulletIndex, 1);
-      } else {
-        // Проверка столкновения с героями
-        this.heroes.forEach((hero, heroIndex) => {
-          const distance = Math.sqrt((bullet.x - hero.x) ** 2 + (bullet.y - hero.y) ** 2);
-          if (distance < hero.radius + bullet.radius && bullet.color !== hero.color) {
-            this.bullets.splice(bulletIndex, 1);
-            hero.hits++;
-          }
-        });
+        return false; // Удаляем снаряд
       }
+  
+      // Проверка столкновения с героями
+      let bulletHit = false;
+      this.heroes.forEach(hero => {
+        if (bullet.shooter !== hero.color) { // Проверяем, что снаряд выстрелил другой герой
+          const distance = Math.sqrt((bullet.x - hero.x) ** 2 + (bullet.y - hero.y) ** 2);
+          if (!bullet.hit && distance < hero.radius + bullet.radius && bullet.color !== hero.color) {
+            hero.hits++;
+            bulletHit = true; // Устанавливаем флаг попадания
+          }
+        }
+      });
+  
+      // Если снаряд попал в героя, он должен быть удален
+      return !bulletHit;
     });
   }
 
@@ -118,15 +129,33 @@ class GameController {
         selectedHero = hero;
       }
     });
-    this.selectedHero = selectedHero;
+  
+    // Сохранение выбранного героя
+    if (selectedHero) {
+      this.selectedHero = selectedHero;
+      console.log('Hero selected:', JSON.stringify(selectedHero, null, 2));
+    } else {
+      console.log('No hero selected on click');
+    }
+  
     return selectedHero;
   }
 
   updateSettings(settings) {
     if (this.selectedHero) {
-      this.selectedHero.bulletColor = settings.bulletColor;
+      // Убедимся, что цвет всегда в формате #rrggbb
+      const colorRegex = /^#[0-9A-F]{6}$/i;
+      if (colorRegex.test(settings.bulletColor)) {
+        this.selectedHero.bulletColor = settings.bulletColor;
+      } else {
+        console.warn('Invalid color format:', settings.bulletColor);
+      }
+  
       this.selectedHero.fireRate = parseInt(settings.fireRate, 10);
       this.selectedHero.speed = parseInt(settings.speed, 10);
+  
+    } else {
+      console.log('No hero selected!');
     }
   }
 }

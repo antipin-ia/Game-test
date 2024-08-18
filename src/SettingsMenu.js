@@ -13,22 +13,44 @@ const SettingsMenu = ({ hero, onUpdateSettings }) => {
 
   const handleSubmit = (event) => {
     event.preventDefault();
-    onUpdateSettings({ bulletColor, fireRate, speed });
+    onUpdateSettings({
+      bulletColor,
+      fireRate: parseInt(fireRate, 10), // Преобразуем в число
+      speed: parseInt(speed, 10) // Преобразуем в число
+    });
   };
+
+  console.log('fireRate, speed', speed, fireRate)
 
   return (
     <form onSubmit={handleSubmit}>
       <label>
         Bullet Color:
-        <input type="color" value={bulletColor} onChange={(e) => setBulletColor(e.target.value)} />
+        <input
+          type="color"
+          value={bulletColor}
+          onChange={(e) => setBulletColor(e.target.value)}
+        />
       </label>
       <label>
         Fire Rate:
-        <input type="range" min="100" max="2000" value={fireRate} onChange={(e) => setFireRate(e.target.value)} />
+        <input
+          type="range"
+          min="100"
+          max="2000"
+          value={fireRate}
+          onChange={(e) => setFireRate(e.target.value)}
+        />
       </label>
       <label>
         Speed:
-        <input type="range" min="1" max="10" value={speed} onChange={(e) => setSpeed(e.target.value)} />
+        <input
+          type="range"
+          min="1"
+          max="10"
+          value={speed}
+          onChange={(e) => setSpeed(e.target.value)}
+        />
       </label>
       <button type="submit">Apply</button>
     </form>
